@@ -172,4 +172,17 @@ mod tests {
         assert_eq!(resp2.status(), Status::Ok);
         assert_ne!(resp1.body_string(), resp2.body_string());
     }
+
+    #[test]
+    fn doesnt_leak() {
+        let rkt = rocket::ignite()
+            .attach(RequestIDFairing)
+            .mount("/", routes![req_id]);
+        let c = Client::new(rkt).unwrap();
+
+        assert_eq!(c.get("/").dispatch().status(), Status::Ok);
+        assert_eq!(c.get("/").dispatch().status(), Status::Ok);
+
+        assert_eq!(REQUEST_IDS.lock().unwrap().len(), 0);
+    }
 }
