@@ -61,7 +61,7 @@ lazy_static!{
         Mutex::new(hash_map::HashMap::new());
 }
 
-/// 
+///
 /// A `Fairing` that must be attached to a rocket instance before a `RequestID` request guard may
 /// be used.
 ///
@@ -103,7 +103,7 @@ impl<'r> rocket::fairing::Fairing for RequestIDFairing {
 /// This ID should be retrieved via its `FromRequest` implementation; that is to say, add an
 /// argument of the type `RequestID` to a rocket handler. That argument can then be dereferenced to
 /// access the ID.
-/// 
+///
 /// If multiple parameters of this type are requested, each will have the same ID.
 /// This property holds even if they are instantiated by other request guards.
 ///
@@ -184,5 +184,41 @@ mod tests {
         assert_eq!(c.get("/").dispatch().status(), Status::Ok);
 
         assert_eq!(REQUEST_IDS.lock().unwrap().len(), 0);
+    }
+
+    #[get("/")]
+    fn multiple(id1: RequestID, id2: RequestID) -> String {
+        assert_eq!(*id1, *id2);
+        "".to_string()
+    }
+
+    struct TestGuard {
+        id: RequestID,
+    }
+
+    impl<'a, 'r> FromRequest<'a, 'r> for TestGuard {
+        type Error = ();
+
+        fn from_request(request: &'a Request<'r>) -> ReqOutcome<Self, Self::Error> {
+            Outcome::Success(TestGuard {
+                id: request.guard().unwrap(),
+            })
+        }
+    }
+
+    #[get("/")]
+    fn multiple_with_guard(id1: RequestID, guard2: TestGuard) -> String {
+        assert_eq!(*id1, *guard2.id);
+        "".to_string()
+    }
+
+    #[test]
+    fn same_in_same_request() {
+        let rkt = rocket::ignite()
+            .attach(RequestIDFairing)
+            .mount("/", routes![multiple_with_guard]);
+        let c = Client::new(rkt).unwrap();
+
+        assert_eq!(c.get("/").dispatch().status(), Status::Ok);
     }
 }

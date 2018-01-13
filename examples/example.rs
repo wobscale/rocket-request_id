@@ -1,8 +1,8 @@
 #![feature(plugin, custom_derive)]
 #![plugin(rocket_codegen)]
 
-extern crate rocket_request_id;
 extern crate rocket;
+extern crate rocket_request_id;
 
 use rocket_request_id::{RequestID, RequestIDFairing};
 
