@@ -1,0 +1,13 @@
+[package]
+name = "rocket-request_id"
+version = "0.1.0"
+authors = ["Euan Kemp <euank@euank.com>"]
+
+[dependencies]
+lazy_static = "1.0"
+rocket = "0.3"
+log = "0.4"
+rand = "0.4"
+
+[dev-dependencies]
+rocket_codegen = "0.3"
