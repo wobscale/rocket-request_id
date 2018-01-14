@@ -135,7 +135,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for RequestID {
             .unwrap()
             .get(&(request as *const Request as usize))
         {
-            Some(id) => Outcome::Success(RequestID { id: id.clone() }),
+            Some(id) => Outcome::Success(RequestID { id: *id }),
             None => {
                 error!("unable to get request id: did you forget to attach the fairing?");
                 Outcome::Failure((Status::InternalServerError, ()))
