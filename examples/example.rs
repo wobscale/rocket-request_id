@@ -7,8 +7,9 @@ extern crate rocket_request_id;
 use rocket_request_id::{RequestID, RequestIDFairing};
 
 #[get("/")]
-fn get(id: RequestID) -> String {
-    format!("My id is {}", *id)
+fn get(req_id: RequestID) -> String {
+    let id: u64 = req_id.into(); // or u64::from(req_id)
+    format!("My id is {}", id)
 }
 
 fn main() {

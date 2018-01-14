@@ -17,7 +17,6 @@ use rocket::Outcome;
 use rand::{thread_rng, Rng};
 use std::collections::hash_map;
 use std::sync::Mutex;
-use std::ops::Deref;
 
 // yes, this is global state. Let's go over how we got here and other possible options:
 //
@@ -36,10 +35,10 @@ use std::ops::Deref;
 // That leaves us with the possible solutions which work:
 // 1. Add a cookie or url hash or something to indicate the ID, make a request guard which reads
 //    from that, or if it doesn't exist initializes it
-//    
+//
 //    This mutates the request the application's rocket handler would see in surprising ways, and
 //    was thus deemed bad.
-// 
+//
 // 2. Use low level hackery to locate a request id either before or after the request in memory,
 //    otherwise behave as above
 //
@@ -121,11 +120,9 @@ pub struct RequestID {
     id: u64,
 }
 
-impl Deref for RequestID {
-    type Target = u64;
-
-    fn deref(&self) -> &u64 {
-        &self.id
+impl From<RequestID> for u64 {
+    fn from(r: RequestID) -> u64 {
+        r.id
     }
 }
 
@@ -138,7 +135,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for RequestID {
             .unwrap()
             .get(&(request as *const Request as usize))
         {
-            Some(id) => Outcome::Success(RequestID { id: id.clone() }),
+            Some(id) => Outcome::Success(RequestID { id: *id }),
             None => {
                 error!("unable to get request id: did you forget to attach the fairing?");
                 Outcome::Failure((Status::InternalServerError, ()))
@@ -155,7 +152,7 @@ mod tests {
 
     #[get("/")]
     fn req_id(id: RequestID) -> String {
-        format!("{}", *id)
+        format!("{}", u64::from(id))
     }
 
     #[test]
@@ -188,7 +185,7 @@ mod tests {
 
     #[get("/")]
     fn multiple(id1: RequestID, id2: RequestID) -> String {
-        assert_eq!(*id1, *id2);
+        assert_eq!(id1, id2);
         "".to_string()
     }
 
@@ -208,7 +205,7 @@ mod tests {
 
     #[get("/")]
     fn multiple_with_guard(id1: RequestID, guard2: TestGuard) -> String {
-        assert_eq!(*id1, *guard2.id);
+        assert_eq!(id1, guard2.id);
         "".to_string()
     }
 
